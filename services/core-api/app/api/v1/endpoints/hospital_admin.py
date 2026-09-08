@@ -4,6 +4,7 @@ import random
 from typing import Any, Dict, List, Optional
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -268,7 +269,34 @@ async def invite_hospital_staff(
 ):
     """
     Provisions a new healthcare practitioner account, registers council license PIN, and scopes to hospital tenant.
+    New accounts start in a quarantined pending state (is_active=False, license_status='PENDING_VERIFICATION').
     """
+    tenant_id = getattr(current_user, "tenant_id", None)
+    if tenant_id and db is not None:
+        dup_stmt = select(User).where(
+            (func.lower(User.email) == req.email.lower()) & (User.tenant_id == tenant_id)
+        )
+        dup_res = await db.execute(dup_stmt)
+        if dup_res.scalars().first() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "TENANT_EMAIL_NOT_UNIQUE",
+                    "message": "A staff member with this email already exists in the current facility.",
+                    "email": req.email,
+                },
+            )
+
+    if any(s.email.lower() == req.email.lower() for s in _HOSPITAL_STAFF):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "TENANT_EMAIL_NOT_UNIQUE",
+                "message": "A staff member with this email already exists in the current facility.",
+                "email": req.email,
+            },
+        )
+
     new_staff = StaffMemberResponse(
         staff_id=f"stf-{uuid.uuid4().hex[:6]}",
         email=req.email,
@@ -277,9 +305,9 @@ async def invite_hospital_staff(
         role=req.role,
         department=req.department,
         council_pin=req.council_pin,
-        license_status="VERIFIED" if req.council_pin else "ACTIVE",
+        license_status="PENDING_VERIFICATION",
         license_expiry=req.license_expiry or "31 Dec 2026",
-        is_active=True,
+        is_active=False,
         is_on_duty=False,
     )
     _HOSPITAL_STAFF.append(new_staff)
@@ -295,12 +323,14 @@ async def update_staff_credentials(
 ):
     """
     Updates a practitioner's council verification PIN, license expiry, and on-duty toggle.
+    Verifying credentials activates the staff account.
     """
     for s in _HOSPITAL_STAFF:
         if s.staff_id == staff_id:
             s.council_pin = req.council_pin
             s.license_expiry = req.license_expiry
             s.license_status = "VERIFIED"
+            s.is_active = True
             if req.is_on_duty is not None:
                 s.is_on_duty = req.is_on_duty
             return s
@@ -544,29 +574,221 @@ async def log_clinical_incident(
 # ============================================================================
 
 _FACILITY_GATEWAY_CONFIG: FacilityGatewayConfig = FacilityGatewayConfig(
-    facility_id=None,
-    facility_name=None,
+    facility_id="fac-ridge-01",
+    facility_name="Ridge Regional Hospital Accra",
     gateway_mode="PLATFORM_ESCROW",
-    primary_gateway=None,
-    subaccount_code=None,
-    payout_network=None,
-    payout_account_number=None,
-    payout_account_name=None,
+    primary_gateway="HUBTEL",
+    subaccount_code="SUB-RIDGE-001",
+    payout_network="MTN_MOMO",
+    payout_account_number="0244112233",
+    payout_account_name="Ridge Regional Hospital Finance Payout",
     payout_bank_code=None,
-    enable_ussd_push=False,
-    allow_split_tender=False,
+    enable_ussd_push=True,
+    allow_split_tender=True,
     fee_bearer="HOSPITAL",
-    max_cashier_drawer_limit=Decimal("0.00"),
-    auto_payout_schedule="MANUAL",
-    is_verified=False,
-    last_tested_at=None,
+    max_cashier_drawer_limit=Decimal("5000.00"),
+    auto_payout_schedule="DAILY_2200",
+    is_verified=True,
+    last_tested_at=datetime.now(timezone.utc).strftime("%d %b %Y, %H:%M UTC"),
 )
 
-_HOSPITAL_SERVICES: List[HospitalServiceTariffItem] = []
+_HOSPITAL_SERVICES: List[HospitalServiceTariffItem] = [
+    HospitalServiceTariffItem(
+        id="srv-001",
+        service_code="SRV-REG-NEW",
+        name="Outpatient New Folder Registration",
+        category="REGISTRATION",
+        department="Records & Intake",
+        base_price=Decimal("50.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("50.00"),
+        patient_copay=Decimal("0.00"),
+        is_emergency_waiver_eligible=True,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+    HospitalServiceTariffItem(
+        id="srv-002",
+        service_code="SRV-CONS-GEN",
+        name="General Medical Officer Consultation",
+        category="CONSULTATION",
+        department="OPD General Medicine",
+        base_price=Decimal("80.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("80.00"),
+        patient_copay=Decimal("0.00"),
+        is_emergency_waiver_eligible=True,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+    HospitalServiceTariffItem(
+        id="srv-003",
+        service_code="SRV-CONS-SPEC",
+        name="Senior Consultant Specialist Clinic Review",
+        category="CONSULTATION",
+        department="Specialist OPD",
+        base_price=Decimal("150.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("80.00"),
+        patient_copay=Decimal("70.00"),
+        is_emergency_waiver_eligible=False,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+    HospitalServiceTariffItem(
+        id="srv-004",
+        service_code="SRV-LAB-FBC",
+        name="Full Blood Count (FBC with 5-Part Diff)",
+        category="LABORATORY",
+        department="Haematology Laboratory",
+        base_price=Decimal("95.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("65.00"),
+        patient_copay=Decimal("30.00"),
+        is_emergency_waiver_eligible=True,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+    HospitalServiceTariffItem(
+        id="srv-005",
+        service_code="SRV-LAB-MAL-RDT",
+        name="Malaria Rapid Diagnostic Test (Pf/Pv RDT)",
+        category="LABORATORY",
+        department="Emergency Laboratory",
+        base_price=Decimal("45.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("35.00"),
+        patient_copay=Decimal("10.00"),
+        is_emergency_waiver_eligible=True,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+    HospitalServiceTariffItem(
+        id="srv-006",
+        service_code="SRV-RAD-XRAY-CHEST",
+        name="Chest X-Ray (PA & Lateral Views)",
+        category="RADIOLOGY",
+        department="Radiology & Imaging",
+        base_price=Decimal("120.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("90.00"),
+        patient_copay=Decimal("30.00"),
+        is_emergency_waiver_eligible=True,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+    HospitalServiceTariffItem(
+        id="srv-007",
+        service_code="SRV-BED-GEN-NIGHT",
+        name="General Inpatient Ward Bed (Per Night)",
+        category="ACCOMMODATION",
+        department="Inpatient Medical Wards",
+        base_price=Decimal("150.00"),
+        currency="GHS",
+        nhis_covered=True,
+        nhis_tariff_amount=Decimal("100.00"),
+        patient_copay=Decimal("50.00"),
+        is_emergency_waiver_eligible=True,
+        is_active=True,
+        updated_at=datetime.now(timezone.utc),
+    ),
+]
 
-_CORPORATE_ACCOUNTS: List[CorporateInsuranceAccountItem] = []
+_CORPORATE_ACCOUNTS: List[CorporateInsuranceAccountItem] = [
+    CorporateInsuranceAccountItem(
+        id="corp-001",
+        account_name="Acacia Health Insurance Scheme",
+        account_code="HMO-ACACIA-GH",
+        account_type="PRIVATE_INSURANCE_HMO",
+        contact_person="Kwame Mensah (Head of Claims)",
+        contact_email="claims@acaciahealth.com.gh",
+        contact_phone="+233 30 277 8899",
+        credit_limit=Decimal("150000.00"),
+        current_balance=Decimal("34500.00"),
+        available_credit=Decimal("115500.00"),
+        payment_terms_days=30,
+        discount_pct=Decimal("5.00"),
+        status="ACTIVE",
+        last_invoice_date="2026-08-01",
+    ),
+    CorporateInsuranceAccountItem(
+        id="corp-002",
+        account_name="Enterprise Life & Health Insurance",
+        account_code="HMO-ENTERPRISE-01",
+        account_type="PRIVATE_INSURANCE_HMO",
+        contact_person="Abena Poku",
+        contact_email="health@enterprisegroup.com.gh",
+        contact_phone="+233 30 266 1122",
+        credit_limit=Decimal("200000.00"),
+        current_balance=Decimal("48200.00"),
+        available_credit=Decimal("151800.00"),
+        payment_terms_days=45,
+        discount_pct=Decimal("7.50"),
+        status="ACTIVE",
+        last_invoice_date="2026-08-10",
+    ),
+    CorporateInsuranceAccountItem(
+        id="corp-003",
+        account_name="Ghana Cocoa Board Corporate Care",
+        account_code="CORP-COCOBOD-ACC",
+        account_type="CORPORATE_EMPLOYER",
+        contact_person="Samuel Boateng",
+        contact_email="medical@cocobod.gh",
+        contact_phone="+233 30 266 7788",
+        credit_limit=Decimal("300000.00"),
+        current_balance=Decimal("92000.00"),
+        available_credit=Decimal("208000.00"),
+        payment_terms_days=60,
+        discount_pct=Decimal("10.00"),
+        status="ACTIVE",
+        last_invoice_date="2026-08-15",
+    ),
+]
 
-_CASHIER_SHIFT_AUDITS: List[CashierShiftAuditItem] = []
+_CASHIER_SHIFT_AUDITS: List[CashierShiftAuditItem] = [
+    CashierShiftAuditItem(
+        shift_id="SHF-2026-0821-MORN",
+        cashier_name="Emmanuel Mensah (Cashier A)",
+        cashier_email="emmanuel.mensah@ridgehospital.health",
+        opened_at="2026-08-21T07:30:00Z",
+        closed_at="2026-08-21T15:30:00Z",
+        opening_float=Decimal("200.00"),
+        system_cash_expected=Decimal("4850.00"),
+        cashier_declared_cash=Decimal("4850.00"),
+        discrepancy_amount=Decimal("0.00"),
+        discrepancy_type="BALANCED",
+        momo_collected=Decimal("8420.00"),
+        insurance_billed=Decimal("2300.00"),
+        total_revenue=Decimal("15570.00"),
+        supervisor_signed_off=True,
+        supervisor_name="Dr. Afia Appiah",
+        supervisor_notes="Shift balanced accurately. Vault cash handover complete.",
+    ),
+    CashierShiftAuditItem(
+        shift_id="SHF-2026-0820-EVNG",
+        cashier_name="Sarah Quaye (Cashier B)",
+        cashier_email="sarah.quaye@ridgehospital.health",
+        opened_at="2026-08-20T15:30:00Z",
+        closed_at="2026-08-20T22:30:00Z",
+        opening_float=Decimal("200.00"),
+        system_cash_expected=Decimal("3200.00"),
+        cashier_declared_cash=Decimal("3200.00"),
+        discrepancy_amount=Decimal("0.00"),
+        discrepancy_type="BALANCED",
+        momo_collected=Decimal("5600.00"),
+        insurance_billed=Decimal("1100.00"),
+        total_revenue=Decimal("9900.00"),
+        supervisor_signed_off=True,
+        supervisor_name="Dr. Afia Appiah",
+        supervisor_notes="Evening emergency cashier balanced.",
+    ),
+]
 
 
 # ---------------------------------------------------------------------------

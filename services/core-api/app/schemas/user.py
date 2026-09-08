@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, ConfigDict, Field, model_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator, model_validator
+from app.core.email_verifier import validate_deliverable_email
 from app.models.user import UserRole, normalize_roles_list
 
 
@@ -16,6 +17,11 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
 
 
 class UserLogin(BaseModel):
@@ -66,7 +72,12 @@ class AdminUserCreateRequest(BaseModel):
     roles: List[str] = Field(default_factory=list, description="Assigned role hat list e.g. ['HOSPITAL_ADMIN','DOCTOR']")
     role: Optional[UserRole] = Field(None, description="Legacy scalar role (backfilled from roles[0] if omitted)")
     license_number: Optional[str] = Field(None, max_length=64)
-    is_active: bool = True
+    is_active: bool = False
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
 
     @model_validator(mode="after")
     def _normalize_and_backfill(self) -> "AdminUserCreateRequest":

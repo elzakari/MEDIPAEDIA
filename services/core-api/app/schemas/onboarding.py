@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import uuid
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from app.core.email_verifier import validate_deliverable_email
 from app.models.tenant import TenantType
 from app.models.user import UserRole, normalize_roles_list
 
@@ -18,6 +19,11 @@ class CompanyInvitationCreateRequest(BaseModel):
     currency: str = Field(default="GHS", example="GHS")
     assigned_plan_code: str = Field(default="PLAN-GROWTH", example="PLAN-GROWTH")
 
+    @field_validator("admin_email")
+    @classmethod
+    def validate_admin_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
+
 
 class CompanyInviteSubmissionRequest(BaseModel):
     company_name: str = Field(..., min_length=2, max_length=255, example="Korle Bu Teaching Hospital")
@@ -28,6 +34,11 @@ class CompanyInviteSubmissionRequest(BaseModel):
     country: str = Field(default="Ghana", example="Ghana")
     currency: str = Field(default="GHS", example="GHS")
     note: Optional[str] = Field(None, max_length=500, example="We are a 200-bed municipal hospital seeking accreditation.")
+
+    @field_validator("admin_email")
+    @classmethod
+    def validate_admin_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
 
 
 class CompanyInvitationResponse(BaseModel):
@@ -112,6 +123,11 @@ class StaffInvitationCreateRequest(BaseModel):
     last_name: str = Field(..., min_length=1, max_length=100, example="Osei")
     role: UserRole = Field(..., example=UserRole.NURSE)
     branch_id: Optional[uuid.UUID] = Field(None, description="Optional facility branch UUID")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
 
 
 class StaffInvitationResponse(BaseModel):

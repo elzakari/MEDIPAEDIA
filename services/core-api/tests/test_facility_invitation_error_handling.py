@@ -29,7 +29,7 @@ async def test_facility_invitation_handles_unpersisted_user_gracefully(db_sessio
     """
     mock_super_admin = User(
         id=uuid.uuid4(),  # Not saved in database
-        email="dev.mock@medipaedia.health",
+        email="dev.mock@outlook.com",
         full_name="Dev Mock Super Admin",
         role=UserRole.SUPER_ADMIN,
         hashed_password="mock",
@@ -37,7 +37,7 @@ async def test_facility_invitation_handles_unpersisted_user_gracefully(db_sessio
 
     req = CompanyInvitationCreateRequest(
         company_name=f"Mock Facility Test {uuid.uuid4().hex[:6]}",
-        admin_email=f"admin.{uuid.uuid4().hex[:6]}@mocktest.health",
+        admin_email=f"admin.{uuid.uuid4().hex[:6]}@outlook.com",
         tenant_type=TenantType.CLINIC,
         country="Ghana",
         currency="GHS",
@@ -55,7 +55,7 @@ async def test_facility_invitation_handles_unknown_plan_code_gracefully(db_sessi
     """
     Ensures invalid or unknown plan codes fallback to PLAN-GROWTH safely.
     """
-    super_admin_email = f"super.{uuid.uuid4().hex[:6]}@medipaedia.health"
+    super_admin_email = f"super.{uuid.uuid4().hex[:6]}@outlook.com"
     super_admin = User(
         email=super_admin_email,
         full_name="Platform Super Admin",
@@ -67,7 +67,7 @@ async def test_facility_invitation_handles_unknown_plan_code_gracefully(db_sessi
 
     req = CompanyInvitationCreateRequest(
         company_name=f"Edge Plan Hospital {uuid.uuid4().hex[:6]}",
-        admin_email=f"admin.{uuid.uuid4().hex[:6]}@edgeplan.health",
+        admin_email=f"admin.{uuid.uuid4().hex[:6]}@outlook.com",
         tenant_type=TenantType.HOSPITAL,
         country="Ghana",
         currency="GHS",
@@ -85,7 +85,7 @@ async def test_facility_invitation_duplicate_registered_tenant_rejection(db_sess
     Ensures attempting to invite a tenant whose email is already registered returns HTTP 400.
     """
     unique_suffix = uuid.uuid4().hex[:6]
-    existing_email = f"admin.{unique_suffix}@activehospital.health"
+    existing_email = f"admin.{unique_suffix}@outlook.com"
 
     tenant = Tenant(
         name=f"Active Hospital {unique_suffix}",

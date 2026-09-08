@@ -195,13 +195,22 @@ async def provision_hospital_staff(
 ):
     """
     Provisions a new hospital team member with MDC / Nursing license credentials.
+    New accounts start in a quarantined pending state (is_active=False, is_verified=False).
     """
-    # Check email uniqueness
-    chk = await db.execute(select(User).where(User.email == req.email))
+    # Check tenant-scoped email uniqueness
+    chk = await db.execute(
+        select(User).where(
+            (func.lower(User.email) == req.email.lower()) & (User.tenant_id == current_user.tenant_id)
+        )
+    )
     if chk.scalars().first():
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A staff account with this email address already exists.",
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "TENANT_EMAIL_NOT_UNIQUE",
+                "message": "A staff member with this email already exists in the current facility.",
+                "email": req.email,
+            },
         )
 
     new_user = User(
@@ -213,8 +222,8 @@ async def provision_hospital_staff(
         tenant_id=current_user.tenant_id,
         license_number=req.license_number,
         hashed_password=get_password_hash(req.password or "Medipaedia2026!"),
-        is_active=True,
-        is_verified=True,
+        is_active=False,
+        is_verified=False,
     )
     db.add(new_user)
     await db.flush()
@@ -232,7 +241,7 @@ async def provision_hospital_staff(
         can_authorize_quarantine=req.can_authorize_quarantine,
         can_collect_cash=req.can_collect_cash,
         can_initiate_payout=req.can_initiate_payout,
-        is_active=True,
+        is_active=False,
     )
     db.add(new_profile)
     await db.commit()
@@ -248,7 +257,7 @@ async def provision_hospital_staff(
         licensing_body=req.licensing_body or "MDC Ghana",
         department=req.department or "OPD",
         specialization=req.specialization or "General Practice",
-        is_active=True,
+        is_active=False,
         created_at=new_user.created_at,
     )
 

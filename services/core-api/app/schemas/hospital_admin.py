@@ -2,7 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from app.core.email_verifier import validate_deliverable_email
 
 
 class ShiftType(str, Enum):
@@ -36,9 +37,9 @@ class StaffMemberResponse(BaseModel):
     role: str
     department: str
     council_pin: Optional[str] = None
-    license_status: str = "ACTIVE"
+    license_status: str = "PENDING_VERIFICATION"
     license_expiry: Optional[str] = None
-    is_active: bool = True
+    is_active: bool = False
     is_on_duty: bool = False
 
 
@@ -51,6 +52,11 @@ class StaffInviteRequest(BaseModel):
     council_pin: Optional[str] = None
     license_expiry: Optional[str] = None
     password: Optional[str] = "Medipaedia2026!"
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
 
 
 class StaffCredentialUpdateRequest(BaseModel):

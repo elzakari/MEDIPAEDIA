@@ -52,10 +52,10 @@ def test_staff_workforce_and_credentialing():
         assert len(staff_list) >= 4
         assert any(s.council_pin == "MDC/RN/89124" for s in staff_list)
 
-        # 2. Invite new staff
+        # 2. Invite new staff (starts in quarantined pending state)
         invite_req = StaffInviteRequest(
             full_name="Dr. Samuel Osei",
-            email="doctor.osei@ridgehospital.health",
+            email="doctor.osei@outlook.com",
             phone="0244998877",
             role="DOCTOR",
             department="Male Medical Ward",
@@ -65,9 +65,10 @@ def test_staff_workforce_and_credentialing():
         new_staff = await invite_hospital_staff(invite_req, current_user=user, db=None)
         assert new_staff.full_name == "Dr. Samuel Osei"
         assert new_staff.council_pin == "MDC/RN/99214"
-        assert new_staff.license_status == "VERIFIED"
+        assert new_staff.license_status == "PENDING_VERIFICATION"
+        assert new_staff.is_active is False
 
-        # 3. Update staff credentials & on-duty toggle
+        # 3. Update staff credentials & on-duty toggle (activates verified practitioner)
         cred_req = StaffCredentialUpdateRequest(
             council_pin="MDC/RN/99214-UPDATED",
             license_expiry="31 Dec 2027",
@@ -75,6 +76,8 @@ def test_staff_workforce_and_credentialing():
         )
         updated = await update_staff_credentials(new_staff.staff_id, cred_req, current_user=user, db=None)
         assert updated.council_pin == "MDC/RN/99214-UPDATED"
+        assert updated.license_status == "VERIFIED"
+        assert updated.is_active is True
         assert updated.is_on_duty is True
 
     asyncio.run(_test())

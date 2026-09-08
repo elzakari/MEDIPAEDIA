@@ -2,7 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional
 import uuid
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from app.core.email_verifier import validate_deliverable_email
 from app.models.user import UserRole
 
 
@@ -83,6 +84,11 @@ class StaffProvisionRequest(BaseModel):
     can_collect_cash: bool = False
     can_initiate_payout: bool = False
 
+    @field_validator("email")
+    @classmethod
+    def validate_email_deliverability(cls, v: str) -> str:
+        return validate_deliverable_email(v)
+
 
 class StaffMemberItem(BaseModel):
     id: uuid.UUID
@@ -94,7 +100,7 @@ class StaffMemberItem(BaseModel):
     licensing_body: Optional[str] = None
     department: Optional[str] = None
     specialization: Optional[str] = None
-    is_active: bool = True
+    is_active: bool = False
     created_at: datetime
 
 

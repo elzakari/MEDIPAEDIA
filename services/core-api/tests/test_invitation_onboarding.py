@@ -53,7 +53,7 @@ async def test_company_invitation_lifecycle(db_session: AsyncSession):
     unique_suffix = uuid.uuid4().hex[:6]
     req = CompanyInvitationCreateRequest(
         company_name=f"Tema Specialist Hospital {unique_suffix}",
-        admin_email=f"admin.{unique_suffix}@temaspecialist.health",
+        admin_email=f"admin.{unique_suffix}@outlook.com",
         tenant_type=TenantType.HOSPITAL,
         country="Ghana",
         currency="GHS",
@@ -87,7 +87,7 @@ async def test_company_invitation_lifecycle(db_session: AsyncSession):
     res = await TenantOnboardingService.complete_company_onboarding(comp_req, db_session)
     assert res.success is True
     assert res.tenant_name == f"Tema Specialist Hospital {unique_suffix}"
-    assert res.user_email == f"admin.{unique_suffix}@temaspecialist.health"
+    assert res.user_email == f"admin.{unique_suffix}@outlook.com"
     assert res.user_role == "HOSPITAL_ADMIN"
     assert res.access_token is not None
     assert res.default_redirect_path == "/hospital-admin"
@@ -121,7 +121,7 @@ async def test_staff_invitation_lifecycle(db_session: AsyncSession):
     await db_session.flush()
 
     hospital_admin = User(
-        email=f"admin.{unique_suffix}@capecoasthospital.health",
+        email=f"admin.{unique_suffix}@outlook.com",
         full_name="Dr. Kwesi Appiah",
         role=UserRole.HOSPITAL_ADMIN,
         tenant_id=tenant.id,
@@ -132,7 +132,7 @@ async def test_staff_invitation_lifecycle(db_session: AsyncSession):
 
     # 1. Create Staff Invitation
     staff_req = StaffInvitationCreateRequest(
-        email=f"dr.mensah.{unique_suffix}@capecoasthospital.health",
+        email=f"dr.mensah.{unique_suffix}@outlook.com",
         first_name="Kofi",
         last_name="Mensah",
         role=UserRole.DOCTOR,
@@ -140,7 +140,7 @@ async def test_staff_invitation_lifecycle(db_session: AsyncSession):
     staff_invite = await StaffOnboardingService.create_staff_invitation(
         staff_req, tenant.id, hospital_admin, db_session
     )
-    assert staff_invite.email == f"dr.mensah.{unique_suffix}@capecoasthospital.health"
+    assert staff_invite.email == f"dr.mensah.{unique_suffix}@outlook.com"
     assert staff_invite.role == "DOCTOR"
     assert staff_invite.status == "PENDING"
     assert "/onboard/staff?token=" in staff_invite.invitation_url
@@ -166,7 +166,7 @@ async def test_staff_invitation_lifecycle(db_session: AsyncSession):
     )
     staff_res = await StaffOnboardingService.complete_staff_onboarding(comp_staff, db_session)
     assert staff_res.success is True
-    assert staff_res.email == f"dr.mensah.{unique_suffix}@capecoasthospital.health"
+    assert staff_res.email == f"dr.mensah.{unique_suffix}@outlook.com"
     assert staff_res.role == "DOCTOR"
     assert staff_res.default_redirect_path == "/doctor"
 
