@@ -10,6 +10,7 @@ import {
   Pill,
   CreditCard,
   ShieldCheck,
+  ClipboardCheck,
   ChevronLeft,
   ChevronRight,
   Building2,
@@ -139,13 +140,56 @@ const DEFAULT_NAV: Record<SidebarRole, ClinicalSidebarNavItem[]> = {
     { id: "fees", label: "Fee Schedule", icon: <Layers className="h-5 w-5" />, href: "/hospital-finance/fee-schedule", matchPrefixes: ["/hospital-finance/fee-schedule"] },
   ],
   HOSPITAL_ADMIN: [
-    { id: "dashboard", label: "Command Center", icon: <LayoutDashboard className="h-5 w-5" />, href: "/hospital-admin", matchPrefixes: ["/hospital-admin"], exact: true },
-    { id: "reception", label: "Reception & Intake", icon: <Users className="h-5 w-5" />, href: "/reception", matchPrefixes: ["/reception", "/patients"] },
-    { id: "triage", label: "Triage Board", icon: <Activity className="h-5 w-5" />, href: "/triage", matchPrefixes: ["/triage"] },
-    { id: "doctor", label: "Doctor Workspace", icon: <Stethoscope className="h-5 w-5" />, href: "/doctor", matchPrefixes: ["/doctor"] },
-    { id: "rx", label: "Pharmacy Admin", icon: <Pill className="h-5 w-5" />, href: "/pharmacy-admin", matchPrefixes: ["/pharmacy-admin"] },
-    { id: "finance", label: "Revenue Cycle", icon: <CreditCard className="h-5 w-5" />, href: "/hospital-finance", matchPrefixes: ["/hospital-finance"] },
-    { id: "admin", label: "Facility Governance", icon: <ShieldCheck className="h-5 w-5" />, href: "/hospital-admin/governance", matchPrefixes: ["/hospital-admin/governance", "/hospital-admin/billing", "/hospital-admin/staff", "/hospital-admin/shift-roster", "/hospital-admin/wards", "/hospital-admin/tariff-master", "/hospital-admin/quality", "/hospital-admin/administration"] },
+    {
+      id: "dashboard",
+      label: "Command Center",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      href: "/hospital-admin",
+      matchPrefixes: ["/hospital-admin"],
+      exact: true,
+    },
+    {
+      id: "staff",
+      label: "Staff Workforce",
+      icon: <Users className="h-4 w-4" />,
+      href: "/hospital-admin/staff",
+      matchPrefixes: ["/hospital-admin/staff"],
+    },
+    {
+      id: "roster",
+      label: "Shift Roster",
+      icon: <FolderClock className="h-4 w-4" />,
+      href: "/hospital-admin/roster",
+      matchPrefixes: ["/hospital-admin/roster"],
+    },
+    {
+      id: "wards",
+      label: "Wards & Theatres",
+      icon: <Building2 className="h-4 w-4" />,
+      href: "/hospital-admin/departments",
+      matchPrefixes: ["/hospital-admin/departments"],
+    },
+    {
+      id: "billing",
+      label: "Billing & Gateways",
+      icon: <CreditCard className="h-4 w-4" />,
+      href: "/hospital-admin/billing-settings",
+      matchPrefixes: ["/hospital-admin/billing-settings"],
+    },
+    {
+      id: "tariffs",
+      label: "Tariff Master",
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      href: "/hospital-admin/tariffs",
+      matchPrefixes: ["/hospital-admin/tariffs"],
+    },
+    {
+      id: "quality",
+      label: "Quality & Risk",
+      icon: <ShieldCheck className="h-4 w-4" />,
+      href: "/hospital-admin/quality",
+      matchPrefixes: ["/hospital-admin/quality"],
+    },
   ],
   PHARMACY_ADMIN: [
     { id: "dashboard", label: "Executive Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, href: "/pharmacy-admin", matchPrefixes: ["/pharmacy-admin"], exact: true },
@@ -185,7 +229,7 @@ const DEFAULT_NAV: Record<SidebarRole, ClinicalSidebarNavItem[]> = {
     { id: "doctor", label: "Doctor Consultations", icon: <Stethoscope className="h-5 w-5" />, href: "/doctor", matchPrefixes: ["/doctor", "/consultations"] },
     { id: "rx", label: "E-Prescriptions & Pharmacy", icon: <Pill className="h-5 w-5" />, href: "/pharmacy-admin", matchPrefixes: ["/doctor/prescriptions", "/pharmacy-admin", "/pharmacy", "/dispensary"] },
     { id: "finance", label: "Billing & Cashier", icon: <CreditCard className="h-5 w-5" />, href: "/hospital-finance", matchPrefixes: ["/hospital-finance"] },
-    { id: "admin", label: "Facility Administration", icon: <ShieldCheck className="h-5 w-5" />, href: "/hospital-admin/governance", matchPrefixes: ["/hospital-admin/governance", "/hospital-admin/billing", "/hospital-admin/staff", "/hospital-admin/wards", "/hospital-admin/administration"] },
+    { id: "admin", label: "Facility Administration", icon: <ShieldCheck className="h-5 w-5" />, href: "/hospital-admin/staff", matchPrefixes: ["/hospital-admin/governance", "/hospital-admin/billing", "/hospital-admin/billing-settings", "/hospital-admin/staff", "/hospital-admin/roster", "/hospital-admin/shift-roster", "/hospital-admin/departments", "/hospital-admin/wards", "/hospital-admin/tariffs", "/hospital-admin/tariff-master", "/hospital-admin/quality", "/hospital-admin/settings", "/hospital-admin/administration"] },
   ],
 };
 
@@ -338,7 +382,7 @@ export function ClinicalSidebar({
 
   return (
     <aside
-      className={`hidden md:flex flex-col h-full min-h-full transition-all duration-300 ease-in-out shrink-0 bg-slate-900 dark:bg-slate-950 text-slate-200 border-r border-slate-800 ${widthClass}`}
+      className={`hidden md:flex flex-col h-full min-h-full transition-all duration-300 ease-in-out shrink-0 bg-slate-950 text-slate-200 border-r border-slate-800 select-none ${widthClass}`}
       aria-label="Primary navigation"
     >
       {/* Brand / Header Block */}

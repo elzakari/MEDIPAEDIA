@@ -159,14 +159,17 @@ export default function NurseLayout({
   return (
     <>
       <div className="hidden md:flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
-        <aside className="shrink-0 h-full z-40">
+        {/* Sticky full-height sidebar container */}
+        <aside className="shrink-0 h-screen sticky top-0 z-40 bg-slate-950 border-r border-slate-800">
           <ClinicalSidebar
-          subBrand="clinical"
-          role={user?.role || "NURSE"}
-          tenantName={tenant?.name}
-          userName={user?.full_name}
-          userRole={user?.role || "NURSE"}
-        />
+            subBrand="clinical"
+            role={user?.role || "NURSE"}
+            tenantName={tenant?.name}
+            userName={user?.full_name}
+            userRole={user?.role || "NURSE"}
+            pathname={pathname}
+            LinkRenderer={NextLinkRenderer}
+          />
         </aside>
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <Header

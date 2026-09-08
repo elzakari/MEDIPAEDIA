@@ -145,14 +145,17 @@ export default function DoctorLayout({
   return (
     <>
       <div className="hidden md:flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
-        <aside className="shrink-0 h-full z-40">
+        {/* Sticky full-height sidebar container */}
+        <aside className="shrink-0 h-screen sticky top-0 z-40 bg-slate-950 border-r border-slate-800">
           <ClinicalSidebar
-          subBrand="clinical"
-          role={user?.role || "DOCTOR"}
-          tenantName={tenant?.name || (user as any)?.tenant_name || (user as any)?.tenant?.name}
-          userName={user?.full_name}
-          userRole={user?.role || "DOCTOR"}
-        />
+            subBrand="clinical"
+            role={user?.role || "DOCTOR"}
+            tenantName={tenant?.name || (user as any)?.tenant_name || (user as any)?.tenant?.name}
+            userName={user?.full_name}
+            userRole={user?.role || "DOCTOR"}
+            pathname={pathname}
+            LinkRenderer={NextLinkRenderer}
+          />
         </aside>
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <Header
