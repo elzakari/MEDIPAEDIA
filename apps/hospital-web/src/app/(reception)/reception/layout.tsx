@@ -173,8 +173,8 @@ export default function ReceptionLayout({
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <Header
             subBrand="clinical"
-            appName={t("reception.records") || "Hospital Records"}
-            appSubtitle={t("reception.pmiIntakeSubtitle") || "Patient Master Index & Intake Desk"}
+            appName={t("reception.records") || "Records"}
+            appSubtitle="Patient Master Index & Archival Dispatch"
             tenantName={facilityBadge}
             userName={profileName}
             userRole={user?.role || "RECORD_CLERK"}

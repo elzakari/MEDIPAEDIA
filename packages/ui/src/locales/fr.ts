@@ -1,4 +1,99 @@
 export const frCatalog = {
+  reception: {
+    records: "Dossiers Hospitaliers",
+    pmiIntakeSubtitle: "Index Patient & ExpÃ©dition d'Archives",
+    receptionAndIntake: "Accueil & Admission",
+    physicalFolders: "Dossiers Physiques",
+    nurseTriage: "Triage Infirmier",
+    doctorWorkspace: "Espace MÃ©decin",
+    facilityAdmin: "Administration",
+  },
+  folders: {
+    title: "Archives & Dossiers MÃ©dicaux Physiques",
+    subtitle: "Suivi des mouvements de dossiers, rayonnage et traÃ§abilitÃ© clinique.",
+    checkOutFolder: "Sortir un Dossier",
+    searchPlaceholder: "Rechercher par NÂ° Dossier, IPP ou Nom du Patient...",
+    empty: {
+      title: "Aucun Dossier En Registre",
+      description: "Aucun dossier n'est actuellement sorti ou enregistrÃ© sur cette Ã©tagÃ¨re.",
+    },
+    metrics: {
+      inArchive: "En Archives",
+      secureOnShelves: "SÃ©curisÃ©s en Rayon",
+      withDoctors: "Chez le MÃ©decin",
+      activeConsultations: "Consultations Actives",
+      inWards: "En Hospitalisation",
+      bedsideNursing: "Soins au Lit",
+      totalTracked: "Total TraÃ§abilitÃ©",
+      ghanaHealthRecords: "Dossiers MÃ©dicaux Ghana",
+    },
+    grid: {
+      loading: "Chargement du plan des archives...",
+      physicalLocation: "Emplacement Physique",
+      fileBoxCode: "Code BoÃ®te / Dossier",
+      actions: {
+        checkOut: "Sortir",
+        returnToShelf: "Ranger en Rayon",
+      },
+      zero: {
+        description: "Aucun dossier physique enregistrÃ©. Enregistrez les dossiers patients pour attribuer les coordonnÃ©es de rayonnage.",
+      },
+      filteredZero: {
+        title: "Aucun Dossier Correspondant",
+        description: "Aucun dossier ne correspond Ã  votre filtre de rayonnage ou critÃ¨re de recherche.",
+      },
+    },
+    ledger: {
+      loading: "Chargement du registre des mouvements...",
+      table: {
+        patientMrn: "Patient / IPP",
+        rackShelf: "Rayon & Ã‰tagÃ¨re",
+        status: "Statut Actuel",
+        currentLocation: "Emplacement Actuel",
+        duration: "En Transit",
+        actions: "Actions",
+      },
+      zero: {
+        title: "Aucun Mouvement de Dossier",
+        description: "Tous les dossiers patients sont rangÃ©s en toute sÃ©curitÃ© dans les rayonnages.",
+      },
+      actions: {
+        return: "Ranger en Rayon",
+        checkOut: "Sortir",
+      },
+    },
+    status: {
+      IN_ARCHIVE: "En Archives",
+      WITH_DOCTOR: "Chez le MÃ©decin",
+      IN_WARD: "En Hospitalisation",
+      CHECKED_OUT: "Sorti",
+      IN_TRANSIT: "En Transit",
+      OVERDUE: "Retour en Retard",
+    },
+    checkout: {
+      modalTitle: "Sortir un Dossier MÃ©dical Patient",
+      modalSubtitle: "TransfÃ©rer la garde du dossier papier vers les consultations externes ou un service de soins.",
+      mrnLabel: "NÂ° Dossier / IPP du Patient",
+      mrnPlaceholder: "ex: NAK-2026-00412",
+      destinationLabel: "Service / DÃ©partement de Destination",
+      doctorLabel: "MÃ©decin / Praticien Responsable",
+      doctorPlaceholder: "ex: Dr. K. Mensah",
+      notesLabel: "Motif du Transfert / Notes Cliniques",
+      submitButton: "Confirmer la Sortie",
+      submitting: "Transfert en cours...",
+      success: "Dossier {mrn} transfÃ©rÃ© avec succÃ¨s vers {destination}.",
+    },
+    return: {
+      success: "Dossier {mrn} retournÃ© aux archives rayon {rack}.",
+    },
+    errors: {
+      loadFailed: "Impossible de charger l'inventaire des dossiers physiques.",
+      checkoutFailed: "Ã‰chec du transfert du dossier. VÃ©rifiez l'IPP.",
+      returnFailed: "Ã‰chec du retour du dossier en archives.",
+      failedToLoadTitle: "Erreur de Chargement des Archives",
+    },
+  },
+
   "common": {
     "appName": "Medipaedia",
     "save": "Enregistrer",

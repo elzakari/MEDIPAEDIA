@@ -1,4 +1,99 @@
 export const enCatalog = {
+  reception: {
+    records: "Hospital Records",
+    pmiIntakeSubtitle: "Patient Master Index & Archival Dispatch",
+    receptionAndIntake: "Reception & Intake",
+    physicalFolders: "Physical Folders",
+    nurseTriage: "Nurse Triage",
+    doctorWorkspace: "Doctor Workspace",
+    facilityAdmin: "Facility Admin",
+  },
+  folders: {
+    title: "Physical Medical Records & Archive",
+    subtitle: "Track physical patient chart movements, rack shelving, and clinical chain-of-custody.",
+    checkOutFolder: "Check Out Folder",
+    searchPlaceholder: "Search by Folder #, MRN, or Patient Name...",
+    empty: {
+      title: "No Physical Folder Ledger Entries",
+      description: "No folders are currently checked out or logged in this rack. Use 'Check Out Folder' or search an MRN.",
+    },
+    metrics: {
+      inArchive: "In Archive",
+      secureOnShelves: "Secure On Shelves",
+      withDoctors: "With Doctors",
+      activeConsultations: "Active Consultations",
+      inWards: "In Wards",
+      bedsideNursing: "Bedside Nursing",
+      totalTracked: "Total Tracked",
+      ghanaHealthRecords: "Ghana Health Records",
+    },
+    grid: {
+      loading: "Loading folder archive map...",
+      physicalLocation: "Physical Location",
+      fileBoxCode: "Box / File Code",
+      actions: {
+        checkOut: "Check Out",
+        returnToShelf: "Return to Shelf",
+      },
+      zero: {
+        description: "No physical folders on record. Register patient charts to populate shelf coordinates.",
+      },
+      filteredZero: {
+        title: "No Matching Folders",
+        description: "No physical records match your selected rack filter or search query.",
+      },
+    },
+    ledger: {
+      loading: "Loading folder transit ledger...",
+      table: {
+        patientMrn: "Patient / MRN",
+        rackShelf: "Rack & Shelf",
+        status: "Current Status",
+        currentLocation: "Transit Location",
+        duration: "In Transit",
+        actions: "Actions",
+      },
+      zero: {
+        title: "No Movement Ledger Records",
+        description: "All patient folders are securely shelved in archive racks. No folders in transit.",
+      },
+      actions: {
+        return: "Return to Shelf",
+        checkOut: "Check Out",
+      },
+    },
+    status: {
+      IN_ARCHIVE: "In Archive",
+      WITH_DOCTOR: "With Doctor",
+      IN_WARD: "In Ward",
+      CHECKED_OUT: "Checked Out",
+      IN_TRANSIT: "In Transit",
+      OVERDUE: "Overdue Return",
+    },
+    checkout: {
+      modalTitle: "Check Out Patient Medical Folder",
+      modalSubtitle: "Transfer physical paper chart custody to OPD, Consulting Doctor, or Ward.",
+      mrnLabel: "Patient Folder / MRN Number",
+      mrnPlaceholder: "e.g. NAK-2026-00412",
+      destinationLabel: "Destination Ward / Department",
+      doctorLabel: "Custody Doctor / Officer Name",
+      doctorPlaceholder: "e.g. Dr. K. Mensah",
+      notesLabel: "Transit Purpose / Clinical Notes",
+      submitButton: "Confirm Chart Dispatch",
+      submitting: "Dispatching...",
+      success: "Folder {mrn} successfully checked out to {destination}.",
+    },
+    return: {
+      success: "Folder {mrn} returned to archive rack {rack}.",
+    },
+    errors: {
+      loadFailed: "Unable to load physical folder inventory.",
+      checkoutFailed: "Failed to dispatch folder. Verify MRN exists.",
+      returnFailed: "Failed to return folder to archive.",
+      failedToLoadTitle: "Error Loading Archives",
+    },
+  },
+
   "common": {
     "appName": "Medipaedia",
     "save": "Save",

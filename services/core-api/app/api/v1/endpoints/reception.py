@@ -74,7 +74,34 @@ router = APIRouter()
 # In-memory store for active TV calls and folder transit ledgers for real-time agility
 _TV_CALLED_TICKETS: List[TVCalledTicket] = []
 
-_IN_MEMORY_FOLDER_LOGS: List[dict] = []
+_IN_MEMORY_FOLDER_LOGS: List[dict] = [
+    {
+        "transit_id": "tr-001",
+        "hospital_card_id": "fld-002",
+        "mrn": "NAK-2026-00102",
+        "patient_name": "Abena Osei",
+        "rack": "Rack-A2",
+        "shelf": "Shelf-01",
+        "status": "CHECKED_OUT",
+        "destination_department": "Consulting Room 2",
+        "checked_out_to": "Dr. Administrator",
+        "checked_out_at": None,
+        "notes": "Follow-up Cardiology review",
+    },
+    {
+        "transit_id": "tr-002",
+        "hospital_card_id": "fld-003",
+        "mrn": "NAK-2026-00103",
+        "patient_name": "Kofi Annan",
+        "rack": "Rack-B1",
+        "shelf": "Shelf-03",
+        "status": "CHECKED_OUT",
+        "destination_department": "Male Surgical Ward",
+        "checked_out_to": "Staff Nurse Mensah",
+        "checked_out_at": None,
+        "notes": "Pre-op chart review",
+    },
+]
 
 
 def _compute_fuzzy_score(s1: str, s2: str) -> float:
@@ -1396,7 +1423,63 @@ async def get_printable_queue_ticket(
 # FAST SCANNER INTAKE, ARCHIVAL SHELVING MAP & TV QUEUE AUDIO STREAM
 # ============================================================================
 
-_ARCHIVE_FOLDERS: List[FolderShelfLocationItem] = []
+_ARCHIVE_FOLDERS: List[FolderShelfLocationItem] = [
+    FolderShelfLocationItem(
+        card_id="fld-001",
+        mrn="NAK-2026-00101",
+        patient_name="Kwame Mensah",
+        rack_number="Rack-A1",
+        shelf_row="Shelf-02",
+        file_box_code="BOX-MED-04",
+        status="IN_ARCHIVE",
+        current_holder_name=None,
+        last_moved_at="08 Sep 2026, 08:30 AM",
+    ),
+    FolderShelfLocationItem(
+        card_id="fld-002",
+        mrn="NAK-2026-00102",
+        patient_name="Abena Osei",
+        rack_number="Rack-A2",
+        shelf_row="Shelf-01",
+        file_box_code="BOX-OPD-12",
+        status="WITH_DOCTOR",
+        current_holder_name="Dr. Administrator (Consulting Room 2)",
+        last_moved_at="08 Sep 2026, 09:15 AM",
+    ),
+    FolderShelfLocationItem(
+        card_id="fld-003",
+        mrn="NAK-2026-00103",
+        patient_name="Kofi Annan",
+        rack_number="Rack-B1",
+        shelf_row="Shelf-03",
+        file_box_code="BOX-SURG-01",
+        status="IN_WARD",
+        current_holder_name="Nurse Station (Male Ward)",
+        last_moved_at="08 Sep 2026, 11:45 AM",
+    ),
+    FolderShelfLocationItem(
+        card_id="fld-004",
+        mrn="NAK-2026-00104",
+        patient_name="Ama Serwaa",
+        rack_number="Rack-B2",
+        shelf_row="Shelf-02",
+        file_box_code="BOX-MAT-08",
+        status="IN_ARCHIVE",
+        current_holder_name=None,
+        last_moved_at="08 Sep 2026, 01:20 PM",
+    ),
+    FolderShelfLocationItem(
+        card_id="fld-005",
+        mrn="NAK-2026-00105",
+        patient_name="Yaw Boateng",
+        rack_number="Rack-C1",
+        shelf_row="Shelf-04",
+        file_box_code="BOX-PEDS-03",
+        status="IN_ARCHIVE",
+        current_holder_name=None,
+        last_moved_at="08 Sep 2026, 02:00 PM",
+    ),
+]
 
 _QUEUE_AUDIO_EVENTS: List[QueueAudioEventItem] = []
 
