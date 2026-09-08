@@ -1,0 +1,19 @@
+{
+  "name": "@medipaedia/config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.js",
+  "files": [
+    "tailwind.config.js",
+    "tsconfig.base.json",
+    "tsconfig.next.json",
+    "tsconfig.react.json"
+  ],
+  "dependencies": {
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4"
+  }
+}

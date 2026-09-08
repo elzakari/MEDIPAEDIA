@@ -1,0 +1,18 @@
+{
+  "name": "@medipaedia/hardware",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@medipaedia/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/w3c-web-usb": "^1.0.10",
+    "typescript": "^5.5.4"
+  }
+}

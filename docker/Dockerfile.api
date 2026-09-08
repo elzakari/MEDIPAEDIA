@@ -1,0 +1,76 @@
+# ==============================================================================
+# Medipaedia Core API - Production Multi-Stage Dockerfile
+# Python 3.12-slim-bookworm with uv Fast Packaging & Non-Root Security
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Stage 1: Builder (Dependency Compilation & Wheel Resolution)
+# ------------------------------------------------------------------------------
+FROM python:3.12-slim-bookworm AS builder
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    UV_SYSTEM_PYTHON=1 \
+    UV_COMPILE_BYTECODE=1
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for ultra-fast dependency resolution and virtualenv management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Copy pyproject.toml specification from services/core-api
+COPY services/core-api/pyproject.toml ./
+
+# Install production dependencies directly into dedicated site-packages directory
+RUN uv pip install --no-cache --target /build/site-packages -r pyproject.toml
+
+# ------------------------------------------------------------------------------
+# Stage 2: Production Runtime Runner
+# ------------------------------------------------------------------------------
+FROM python:3.12-slim-bookworm AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/site-packages:/app \
+    PORT=8000 \
+    HOST=0.0.0.0
+
+WORKDIR /app
+
+# Install runtime shared libraries for PostgreSQL, GIS and spatial analytics
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libgeos-c1v5 \
+    libgdal32 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create dedicated non-root application security user
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/bash -m appuser
+
+# Copy installed Python packages from builder
+COPY --from=builder --chown=appuser:appgroup /build/site-packages /app/site-packages
+
+# Copy application source code, database migrations, and configurations
+COPY --chown=appuser:appgroup services/core-api /app
+
+# Switch to non-root execution context
+USER appuser
+
+EXPOSE 8000
+
+# Periodic container healthcheck against core API /health endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+# Launch production ASGI Uvicorn server with optimized workers and proxy header forwarding
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--proxy-headers", "--forwarded-allow-ips", "*"]

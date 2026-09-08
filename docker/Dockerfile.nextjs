@@ -1,0 +1,83 @@
+# ==============================================================================
+# Medipaedia Next.js Applications - Production Multi-Stage Dockerfile
+# Turbo-Pruned 3-Stage Standalone Build & Minimal Alpine Runtime
+# Target apps: hospital-web | pharmacy-pos | patient-store
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Stage 1: Workspace Pruner (Extract isolated dependency tree via Turborepo)
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS pruner
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install turbo CLI globally
+RUN npm install -g turbo
+
+# Copy entire monorepo to generate target lockfile and pruned workspace
+COPY . .
+
+ARG APP_NAME=hospital-web
+RUN turbo prune @medipaedia/${APP_NAME} --docker
+
+# ------------------------------------------------------------------------------
+# Stage 2: Dependency Installer & Next.js Standalone Builder
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS builder
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+# 1. Install dependencies from pruned package manifests
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
+# 2. Copy pruned source files and build configurations
+COPY --from=pruner /app/out/full/ .
+COPY turbo.json turbo.json
+
+ARG APP_NAME=hospital-web
+ARG NEXT_PUBLIC_API_URL=https://api.medipaedia.health
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Compile target application into Next.js standalone bundle
+RUN pnpm turbo run build --filter=@medipaedia/${APP_NAME}
+
+# ------------------------------------------------------------------------------
+# Stage 3: Minimal Production Standalone Runner
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ARG APP_NAME=hospital-web
+ENV APP_NAME=${APP_NAME}
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Create non-root system user and group
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy static assets and standalone server bundle
+COPY --from=builder /app/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+# Healthcheck to probe Next.js HTTP server
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Execute standalone server using shell expansion for APP_NAME
+CMD ["sh", "-c", "node apps/${APP_NAME}/server.js"]

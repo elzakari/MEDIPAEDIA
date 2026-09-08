@@ -1,0 +1,227 @@
+version: "3.9"
+
+# ==============================================================================
+# Medipaedia Healthcare & Pharmacy Cloud Platform - Production Compose Manifest
+# Architecture: PostgreSQL 16 + Redis 7 + FastAPI Core + Next.js (x3) + Nginx Proxy
+# ==============================================================================
+
+services:
+  # ============================================================================
+  # 1. PostgreSQL 16 + PostGIS Spatial Engine
+  # ============================================================================
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: medipaedia-prod-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medipaedia_prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-MedipaediaSecurePass2026!}
+      POSTGRES_DB: ${POSTGRES_DB:-medipaedia_db}
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c effective_cache_size=1536MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=128MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medipaedia_prod} -d ${POSTGRES_DB:-medipaedia_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - medipaedia-internal
+
+  # ============================================================================
+  # 2. Redis 7 (Distributed Cache, OPD Real-time Queues & Concurrency Locks)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: medipaedia-prod-redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-MedipaediaRedis2026!}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-MedipaediaRedis2026!}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - medipaedia-internal
+
+  # ============================================================================
+  # 3. Core API (FastAPI Backend Service)
+  # ============================================================================
+  core-api:
+    build:
+      context: .
+      dockerfile: services/core-api/Dockerfile
+    container_name: medipaedia-prod-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      PROJECT_NAME: "Medipaedia Core API"
+      VERSION: "0.1.0"
+      API_V1_STR: "/api/v1"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medipaedia_prod}:${POSTGRES_PASSWORD:-MedipaediaSecurePass2026!}@db:5432/${POSTGRES_DB:-medipaedia_db}
+      SYNC_DATABASE_URL: postgresql://${POSTGRES_USER:-medipaedia_prod}:${POSTGRES_PASSWORD:-MedipaediaSecurePass2026!}@db:5432/${POSTGRES_DB:-medipaedia_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-MedipaediaRedis2026!}@redis:6379/0
+      SECRET_KEY: ${JWT_SECRET:-medipaedia_production_jwt_secret_key_2026_super_secure}
+      HMAC_SECRET_KEY: ${HMAC_SECRET_KEY:-medipaedia_production_prescription_hmac_secret_32char}
+      PRESCRIPTION_HMAC_SECRET: ${HMAC_SECRET_KEY:-medipaedia_production_prescription_hmac_secret_32char}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-sk_live_paystack_secret_key}
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY:-pk_live_paystack_public_key}
+      FEDAPAY_SECRET_KEY: ${FEDAPAY_SECRET_KEY:-sk_live_fedapay_secret_key}
+      FEDAPAY_PUBLIC_KEY: ${FEDAPAY_PUBLIC_KEY:-pk_live_fedapay_public_key}
+      HUB2_SECRET_KEY: ${HUB2_SECRET_KEY:-hub2_secret_key_west_africa_xof}
+      BACKEND_CORS_ORIGINS: '["https://clinical.medipaedia.health","https://rx.medipaedia.health","https://care.medipaedia.health","https://api.medipaedia.health"]'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - medipaedia-internal
+
+  # ============================================================================
+  # 4. Hospital Web Application (Clinical EHR & OPD Reception Desk)
+  # ============================================================================
+  hospital-web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nextjs
+      args:
+        APP_NAME: hospital-web
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.medipaedia.health}
+    container_name: medipaedia-prod-hospital-web
+    restart: always
+    depends_on:
+      core-api:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.medipaedia.health}
+      NEXT_PUBLIC_TENANT_TYPE: HOSPITAL
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - medipaedia-internal
+
+  # ============================================================================
+  # 5. Pharmacy POS Application (Dispensary & Inventory Management)
+  # ============================================================================
+  pharmacy-pos:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nextjs
+      args:
+        APP_NAME: pharmacy-pos
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.medipaedia.health}
+    container_name: medipaedia-prod-pharmacy-pos
+    restart: always
+    depends_on:
+      core-api:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.medipaedia.health}
+      NEXT_PUBLIC_TENANT_TYPE: PHARMACY
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - medipaedia-internal
+
+  # ============================================================================
+  # 6. Patient Store Application (Care Marketplace & Telehealth Portal)
+  # ============================================================================
+  patient-store:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nextjs
+      args:
+        APP_NAME: patient-store
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.medipaedia.health}
+    container_name: medipaedia-prod-patient-store
+    restart: always
+    depends_on:
+      core-api:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.medipaedia.health}
+      NEXT_PUBLIC_TENANT_TYPE: PLATFORM
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - medipaedia-internal
+
+  # ============================================================================
+  # 7. Nginx Edge Reverse Proxy (SSL Termination & Subdomain Routing)
+  # ============================================================================
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: medipaedia-prod-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      core-api:
+        condition: service_healthy
+      hospital-web:
+        condition: service_started
+      pharmacy-pos:
+        condition: service_started
+      patient-store:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - medipaedia-internal
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  medipaedia-internal:
+    driver: bridge
