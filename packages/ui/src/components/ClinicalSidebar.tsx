@@ -106,9 +106,6 @@ const DEFAULT_NAV: Record<SidebarRole, ClinicalSidebarNavItem[]> = {
   RECEPTION: [
     { id: "intake", label: "Reception & Intake", icon: <Users className="h-5 w-5" />, href: "/reception", matchPrefixes: ["/reception", "/patients", "/registry", "/outpatient"] },
     { id: "folders", label: "Physical Folders", icon: <FolderClock className="h-5 w-5" />, href: "/reception/folders", matchPrefixes: ["/reception/folders"] },
-    { id: "triage", label: "Nurse Triage", icon: <Activity className="h-5 w-5" />, href: "/triage", matchPrefixes: ["/triage"] },
-    { id: "doctor", label: "Doctor Workspace", icon: <Stethoscope className="h-5 w-5" />, href: "/doctor", matchPrefixes: ["/doctor", "/consultations"] },
-    { id: "admin", label: "Facility Admin", icon: <ShieldCheck className="h-5 w-5" />, href: "/hospital-admin", matchPrefixes: ["/hospital-admin"] },
   ],
   NURSE: [
     { id: "station", label: "Station Overview", icon: <LayoutDashboard className="h-5 w-5" />, href: "/nurse", matchPrefixes: ["/nurse"], exact: true },
